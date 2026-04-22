@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - UIA Streaming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { brand: { red: '#e50914', dark: '#141414' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-brand-dark text-white flex items-center justify-center min-h-screen p-6">
+    <div class="w-full max-w-md bg-black/60 p-10 rounded-xl shadow-2xl border border-gray-800 backdrop-blur-md">
+        <div class="text-center mb-8">
+            <h1 class="text-brand-red font-black text-4xl tracking-tighter mb-2">UIA STREAM</h1>
+            <p class="text-gray-400">Acceso a Administración</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Usuario</label>
+                <input type="text" id="username" required 
+                       class="w-full bg-gray-900 border border-gray-700 rounded p-3 focus:border-brand-red focus:outline-none transition-colors"
+                       placeholder="admin">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Contraseña</label>
+                <input type="password" id="password" required 
+                       class="w-full bg-gray-900 border border-gray-700 rounded p-3 focus:border-brand-red focus:outline-none transition-colors"
+                       placeholder="••••••••">
+            </div>
+            
+            <div id="errorMessage" class="hidden text-brand-red text-sm font-medium bg-red-900/20 p-3 rounded border border-red-900/50">
+                Credenciales incorrectas. Intenta de nuevo.
+            </div>
+
+            <button type="submit" id="loginBtn"
+                    class="w-full bg-brand-red hover:bg-red-700 text-white font-bold py-3 rounded shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
+                Iniciar Sesión
+            </button>
+        </form>
+        
+        <div class="mt-8 text-center">
+            <a href="index.html" class="text-gray-500 hover:text-white text-sm transition-colors">← Volver al inicio</a>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
