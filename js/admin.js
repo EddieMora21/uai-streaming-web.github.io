@@ -28,6 +28,7 @@ const mPosterInput = document.getElementById('mPoster');
 
 let adminMovies = [];
 let adminSearchTerm = '';
+let adminSearchTimeout;
 
 /**
  * Limpia y normaliza la ruta del póster
@@ -55,6 +56,15 @@ async function loadAdminMovies() {
     try {
         const data = [];
 
+        if (adminSearchTerm) {
+            const response = await fetch(`${API_URL}?page=1&pageSize=${ADMIN_PAGE_SIZE}&titulo=${encodeURIComponent(adminSearchTerm)}`);
+            if (!response.ok) throw new Error('No se pudieron cargar las películas');
+
+            adminMovies = await response.json();
+            renderAdminTable(adminMovies);
+            return;
+        }
+
         for (let page = 1; page <= ADMIN_MAX_PAGES; page++) {
             const response = await fetch(`${API_URL}?page=${page}&pageSize=${ADMIN_PAGE_SIZE}`);
             if (!response.ok) throw new Error('No se pudieron cargar las películas');
@@ -81,12 +91,7 @@ async function loadAdminMovies() {
 }
 
 function renderAdminTable(data) {
-    const filteredMovies = data.filter(movie => {
-        const title = (movie.titulo || '').toLowerCase();
-        return title.includes(adminSearchTerm);
-    });
-
-    if (filteredMovies.length === 0) {
+    if (data.length === 0) {
         adminMoviesTable.innerHTML = `
         <tr>
             <td colspan="5" class="px-6 py-10 text-center text-gray-400 font-bold">
@@ -96,7 +101,7 @@ function renderAdminTable(data) {
         return;
     }
 
-    adminMoviesTable.innerHTML = filteredMovies.map(movie => {
+    adminMoviesTable.innerHTML = data.map(movie => {
         let poster = cleanPosterPath(movie.posterPath);
         const posterUrl = (poster && (poster.startsWith('/') || poster.startsWith('http'))) ? 
             (poster.startsWith('/') ? IMAGE_BASE_URL + poster : poster) : 
@@ -128,8 +133,12 @@ function renderAdminTable(data) {
 }
 
 adminSearchInput.addEventListener('input', (event) => {
-    adminSearchTerm = event.target.value.trim().toLowerCase();
-    renderAdminTable(adminMovies);
+    clearTimeout(adminSearchTimeout);
+    adminSearchTerm = event.target.value.trim();
+    adminSearchTimeout = setTimeout(() => {
+        tableLoading.style.display = 'flex';
+        loadAdminMovies();
+    }, 300);
 });
 
 /**
