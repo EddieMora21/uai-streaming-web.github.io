@@ -14,6 +14,13 @@ document.getElementById('userNameDisplay').innerText = user || 'Admin';
 const adminMoviesTable = document.getElementById('adminMoviesTable');
 const tableLoading = document.getElementById('tableLoading');
 const logoutBtn = document.getElementById('logoutBtn');
+const movieModal = document.getElementById('movieModal');
+const movieForm = document.getElementById('movieForm');
+const mTitleInput = document.getElementById('mTitle');
+const mYearInput = document.getElementById('mYear');
+const mDurationInput = document.getElementById('mDuration');
+const mSynopsisInput = document.getElementById('mSynopsis');
+const mPosterInput = document.getElementById('mPoster');
 
 /**
  * Limpia y normaliza la ruta del póster
@@ -39,11 +46,18 @@ logoutBtn.addEventListener('click', () => {
  */
 async function loadAdminMovies() {
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(`${API_URL}?page=1&pageSize=100`);
+        if (!response.ok) throw new Error('No se pudieron cargar las películas');
         const data = await response.json();
         renderAdminTable(data);
     } catch (error) {
         console.error('Error loading movies:', error);
+        adminMoviesTable.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-10 text-center text-red-400 font-bold">
+                    No se pudo cargar el catálogo administrativo.
+                </td>
+            </tr>`;
     } finally {
         tableLoading.style.display = 'none';
     }
@@ -69,7 +83,7 @@ function renderAdminTable(data) {
             <td class="px-6 py-4 text-gray-500 font-medium">${movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : 'N/A'}</td>
             <td class="px-6 py-4 text-gray-500 font-medium">${movie.durationMinutes} min</td>
             <td class="px-6 py-4 text-right">
-                 <button onclick="editMovie(${movie.id}, '${movieTitle}', ${movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : 0}, ${movie.durationMinutes}, '')" 
+                 <button onclick="openEditMovie(${movie.id})" 
                      class="text-gray-500 hover:text-blue-400 p-2 transition-colors transform hover:scale-125">
                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                  </button>
@@ -115,41 +129,63 @@ async function deleteMovie(id) {
 // Variable para saber si estamos editando o creando
 let editingMovieId = null;
 
+function resetMovieForm() {
+    editingMovieId = null;
+    movieForm.reset();
+    mPosterInput.value = '';
+}
+
 // Abrir modal para AGREGAR
 document.getElementById('addMovieBtn').addEventListener('click', () => {
-    editingMovieId = null;
-    document.getElementById('mTitle').value = '';
-    document.getElementById('mYear').value = '';
-    document.getElementById('mDuration').value = '';
-    document.getElementById('mSynopsis').value = '';
-    document.getElementById('movieModal').style.display = 'flex';
+    resetMovieForm();
+    movieModal.style.display = 'flex';
 });
 
 // Cerrar modal
 document.getElementById('closeModal').addEventListener('click', () => {
-    document.getElementById('movieModal').style.display = 'none';
+    movieModal.style.display = 'none';
 });
 
 // Abrir modal para EDITAR
-function editMovie(id, titulo, year, duration, sinopsis) {
-    editingMovieId = id;
-    document.getElementById('mTitle').value = titulo;
-    document.getElementById('mYear').value = year;
-    document.getElementById('mDuration').value = duration;
-    document.getElementById('mSynopsis').value = sinopsis;
-    document.getElementById('movieModal').style.display = 'flex';
+async function openEditMovie(id) {
+    try {
+        const response = await fetch(`${API_URL}/${id}`);
+        if (!response.ok) throw new Error('No se pudo cargar la película');
+
+        const movie = await response.json();
+        editingMovieId = movie.id;
+        mTitleInput.value = movie.titulo || '';
+        mYearInput.value = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : '';
+        mDurationInput.value = movie.durationMinutes || '';
+        mSynopsisInput.value = movie.sinopsis || '';
+        mPosterInput.value = cleanPosterPath(movie.posterPath || '');
+        movieModal.style.display = 'flex';
+    } catch (error) {
+        console.error('Edit load error:', error);
+        alert('No se pudo cargar la película para editar.');
+    }
 }
 
 // Guardar: CREATE o UPDATE
-document.getElementById('movieForm').addEventListener('submit', async (e) => {
+movieForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const posterPath = mPosterInput.value.trim();
+    const year = parseInt(mYearInput.value, 10);
+    const durationMinutes = parseInt(mDurationInput.value, 10);
+
     const movie = {
-        titulo: document.getElementById('mTitle').value,
-        releaseDate: new Date(document.getElementById('mYear').value, 0, 1),
-        durationMinutes: parseInt(document.getElementById('mDuration').value),
-        sinopsis: document.getElementById('mSynopsis').value
+        titulo: mTitleInput.value.trim(),
+        releaseDate: Number.isNaN(year) ? null : new Date(year, 0, 1).toISOString(),
+        durationMinutes: Number.isNaN(durationMinutes) ? 0 : durationMinutes,
+        sinopsis: mSynopsisInput.value.trim(),
+        posterPath
     };
+
+    if (!movie.titulo || !movie.posterPath || !movie.releaseDate || movie.durationMinutes <= 0) {
+        alert('Completa título, año, duración y poster URL para guardar la película.');
+        return;
+    }
 
     try {
         let response;
@@ -184,13 +220,15 @@ document.getElementById('movieForm').addEventListener('submit', async (e) => {
 
         if (response.ok) {
             alert(editingMovieId ? 'Película actualizada' : 'Película creada correctamente');
-            document.getElementById('movieModal').style.display = 'none';
+            movieModal.style.display = 'none';
             loadAdminMovies();
         } else {
-            alert('Error al guardar');
+            const errorText = await response.text();
+            alert(`Error al guardar: ${errorText || response.status}`);
         }
     } catch (error) {
         console.error('Save error:', error);
+        alert('Ocurrió un error inesperado al guardar la película.');
     }
 });
 
