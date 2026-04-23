@@ -14,6 +14,7 @@ document.getElementById('userNameDisplay').innerText = user || 'Admin';
 const adminMoviesTable = document.getElementById('adminMoviesTable');
 const tableLoading = document.getElementById('tableLoading');
 const logoutBtn = document.getElementById('logoutBtn');
+const adminSearchInput = document.getElementById('adminSearchInput');
 const DEFAULT_POSTER_URL = 'https://placehold.co/400x600/111/E50914?text=UIA+STREAM';
 const ADMIN_PAGE_SIZE = 200;
 const ADMIN_MAX_PAGES = 20;
@@ -24,6 +25,9 @@ const mYearInput = document.getElementById('mYear');
 const mDurationInput = document.getElementById('mDuration');
 const mSynopsisInput = document.getElementById('mSynopsis');
 const mPosterInput = document.getElementById('mPoster');
+
+let adminMovies = [];
+let adminSearchTerm = '';
 
 /**
  * Limpia y normaliza la ruta del póster
@@ -61,7 +65,8 @@ async function loadAdminMovies() {
             if (pageData.length < ADMIN_PAGE_SIZE) break;
         }
 
-        renderAdminTable(data);
+        adminMovies = data;
+        renderAdminTable(adminMovies);
     } catch (error) {
         console.error('Error loading movies:', error);
         adminMoviesTable.innerHTML = `
@@ -76,7 +81,22 @@ async function loadAdminMovies() {
 }
 
 function renderAdminTable(data) {
-    adminMoviesTable.innerHTML = data.map(movie => {
+    const filteredMovies = data.filter(movie => {
+        const title = (movie.titulo || '').toLowerCase();
+        return title.includes(adminSearchTerm);
+    });
+
+    if (filteredMovies.length === 0) {
+        adminMoviesTable.innerHTML = `
+        <tr>
+            <td colspan="5" class="px-6 py-10 text-center text-gray-400 font-bold">
+                No se encontraron películas con ese título.
+            </td>
+        </tr>`;
+        return;
+    }
+
+    adminMoviesTable.innerHTML = filteredMovies.map(movie => {
         let poster = cleanPosterPath(movie.posterPath);
         const posterUrl = (poster && (poster.startsWith('/') || poster.startsWith('http'))) ? 
             (poster.startsWith('/') ? IMAGE_BASE_URL + poster : poster) : 
@@ -106,6 +126,11 @@ function renderAdminTable(data) {
         </tr>`;
     }).join('');
 }
+
+adminSearchInput.addEventListener('input', (event) => {
+    adminSearchTerm = event.target.value.trim().toLowerCase();
+    renderAdminTable(adminMovies);
+});
 
 /**
  * Eliminar Película (Acción Protegida)
