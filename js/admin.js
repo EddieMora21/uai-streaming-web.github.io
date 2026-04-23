@@ -14,6 +14,7 @@ document.getElementById('userNameDisplay').innerText = user || 'Admin';
 const adminMoviesTable = document.getElementById('adminMoviesTable');
 const tableLoading = document.getElementById('tableLoading');
 const logoutBtn = document.getElementById('logoutBtn');
+const DEFAULT_POSTER_URL = 'https://placehold.co/400x600/111/E50914?text=UIA+STREAM';
 const movieModal = document.getElementById('movieModal');
 const movieForm = document.getElementById('movieForm');
 const mTitleInput = document.getElementById('mTitle');
@@ -170,7 +171,7 @@ async function openEditMovie(id) {
 movieForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const posterPath = mPosterInput.value.trim();
+    const posterPath = mPosterInput.value.trim() || DEFAULT_POSTER_URL;
     const year = parseInt(mYearInput.value, 10);
     const durationMinutes = parseInt(mDurationInput.value, 10);
 
@@ -182,8 +183,8 @@ movieForm.addEventListener('submit', async (e) => {
         posterPath
     };
 
-    if (!movie.titulo || !movie.posterPath || !movie.releaseDate || movie.durationMinutes <= 0) {
-        alert('Completa título, año, duración y poster URL para guardar la película.');
+    if (!movie.titulo || !movie.releaseDate || movie.durationMinutes <= 0) {
+        alert('Completa título, año y duración para guardar la película.');
         return;
     }
 
