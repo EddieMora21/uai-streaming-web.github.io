@@ -15,6 +15,8 @@ const adminMoviesTable = document.getElementById('adminMoviesTable');
 const tableLoading = document.getElementById('tableLoading');
 const logoutBtn = document.getElementById('logoutBtn');
 const DEFAULT_POSTER_URL = 'https://placehold.co/400x600/111/E50914?text=UIA+STREAM';
+const ADMIN_PAGE_SIZE = 200;
+const ADMIN_MAX_PAGES = 20;
 const movieModal = document.getElementById('movieModal');
 const movieForm = document.getElementById('movieForm');
 const mTitleInput = document.getElementById('mTitle');
@@ -47,9 +49,18 @@ logoutBtn.addEventListener('click', () => {
  */
 async function loadAdminMovies() {
     try {
-        const response = await fetch(`${API_URL}?page=1&pageSize=100`);
-        if (!response.ok) throw new Error('No se pudieron cargar las películas');
-        const data = await response.json();
+        const data = [];
+
+        for (let page = 1; page <= ADMIN_MAX_PAGES; page++) {
+            const response = await fetch(`${API_URL}?page=${page}&pageSize=${ADMIN_PAGE_SIZE}`);
+            if (!response.ok) throw new Error('No se pudieron cargar las películas');
+
+            const pageData = await response.json();
+            data.push(...pageData);
+
+            if (pageData.length < ADMIN_PAGE_SIZE) break;
+        }
+
         renderAdminTable(data);
     } catch (error) {
         console.error('Error loading movies:', error);
